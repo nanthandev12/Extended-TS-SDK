@@ -30,7 +30,7 @@ let isInitialized = false;
  * 
  * @example
  * ```typescript
- * import { initWasm, sign } from 'x10-typescript-trading-starknet';
+ * import { initWasm, sign } from 'extended-typescript-sdk';
  * 
  * async function main() {
  *   await initWasm(); // Initialize first!
@@ -62,7 +62,7 @@ export async function initWasm(): Promise<void> {
       const possiblePaths = [
         path.join(__dirname, '../../wasm/stark_crypto_wasm'),
         path.join(process.cwd(), 'wasm/stark_crypto_wasm'),
-        path.join(process.cwd(), 'node_modules/x10-typescript-trading-starknet/wasm/stark_crypto_wasm'),
+        path.join(process.cwd(), 'node_modules/extended-typescript-sdk/wasm/stark_crypto_wasm'),
         // Fallback to build directory (for development)
         path.join(__dirname, '../../wasm-signer/pkg/stark_crypto_wasm'),
         path.join(process.cwd(), 'wasm-signer/pkg/stark_crypto_wasm'),
@@ -95,6 +95,7 @@ export async function initWasm(): Promise<void> {
       try {
         // For browser, we expect the bundler to handle WASM imports
         // The bundler should resolve wasm/stark_crypto_wasm-web.js
+        // @ts-expect-error - Dynamic import resolved at runtime by bundler
         wasmModule = await import('../../wasm/stark_crypto_wasm-web') as WasmModule;
         
         if (wasmModule.init) {
@@ -103,6 +104,7 @@ export async function initWasm(): Promise<void> {
       } catch (browserError: any) {
         // Fallback: try without -web suffix (for custom builds)
         try {
+          // @ts-expect-error - Dynamic import resolved at runtime by bundler
           wasmModule = await import('../../wasm/stark_crypto_wasm') as WasmModule;
           if (wasmModule.init) {
             await wasmModule.init();

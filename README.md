@@ -13,7 +13,7 @@ This SDK provides full type safety and modern async/await patterns for interacti
 ## Installation
 
 ```bash
-npm install x10-typescript-trading-starknet
+npm install extended-typescript-sdk
 ```
 
 ## Prerequisites
@@ -33,7 +33,7 @@ import {
   TESTNET_CONFIG,
   StarkPerpetualAccount,
   PerpetualTradingClient,
-} from 'x10-typescript-trading-starknet';
+} from 'extended-typescript-sdk';
 import Decimal from 'decimal.js';
 
 // Initialize WASM module (MUST be called before using any crypto functions)
@@ -55,7 +55,7 @@ const tradingClient = new PerpetualTradingClient(TESTNET_CONFIG, starkAccount);
 ### 2. Place an Order
 
 ```typescript
-import { OrderSide } from 'x10-typescript-trading-starknet';
+import { OrderSide } from 'extended-typescript-sdk';
 import Decimal from 'decimal.js';
 
 const placedOrder = await tradingClient.placeOrder({
@@ -90,7 +90,7 @@ console.log('Open orders:', openOrders.toPrettyJson());
 ### 4. Onboarding (User Client)
 
 ```typescript
-import { UserClient, TESTNET_CONFIG } from 'x10-typescript-trading-starknet';
+import { UserClient, TESTNET_CONFIG } from 'extended-typescript-sdk';
 
 // Create user client
 const userClient = new UserClient(TESTNET_CONFIG, () => ethPrivateKey);
@@ -115,7 +115,7 @@ const client = new PerpetualTradingClient(TESTNET_CONFIG, starkAccount);
 ### 5. Stream Data
 
 ```typescript
-import { PerpetualStreamClient, TESTNET_CONFIG } from 'x10-typescript-trading-starknet';
+import { PerpetualStreamClient, TESTNET_CONFIG } from 'extended-typescript-sdk';
 
 const streamClient = new PerpetualStreamClient({
   apiUrl: TESTNET_CONFIG.streamUrl,
@@ -147,7 +147,7 @@ The SDK includes a pre-built WASM signer that works in both **Node.js** and **br
 The SDK ships with pre-built WASM files. Simply use the SDK:
 
 ```typescript
-import { initWasm, sign } from 'x10-typescript-trading-starknet';
+import { initWasm, sign } from 'extended-typescript-sdk';
 
 await initWasm(); // Automatically loads the correct WASM for your environment
 const [r, s] = sign(privateKey, msgHash);
@@ -178,7 +178,7 @@ The WASM signer uses `starknet-crypto` crate for cryptographic operations. It's 
 ### Trading Client
 
 ```typescript
-import { PerpetualTradingClient, TESTNET_CONFIG } from 'x10-typescript-trading-starknet';
+import { PerpetualTradingClient, TESTNET_CONFIG } from 'extended-typescript-sdk';
 
 const client = new PerpetualTradingClient(config, account);
 
@@ -210,7 +210,7 @@ await client.marketsInfo.getOrderbookSnapshot('BTC-USD');
 ### User Client (Onboarding)
 
 ```typescript
-import { UserClient } from 'x10-typescript-trading-starknet';
+import { UserClient } from 'extended-typescript-sdk';
 
 const userClient = new UserClient(config, () => ethPrivateKey);
 
@@ -230,7 +230,7 @@ const apiKey = await userClient.createAccountApiKey(account.account, 'descriptio
 ### Stream Client
 
 ```typescript
-import { PerpetualStreamClient } from 'x10-typescript-trading-starknet';
+import { PerpetualStreamClient } from 'extended-typescript-sdk';
 
 const streamClient = new PerpetualStreamClient({ apiUrl: config.streamUrl });
 
@@ -255,7 +255,7 @@ const accountStream = streamClient.subscribeToAccountUpdates(apiKey);
 The SDK supports different environments:
 
 ```typescript
-import { TESTNET_CONFIG, MAINNET_CONFIG } from 'x10-typescript-trading-starknet';
+import { TESTNET_CONFIG, MAINNET_CONFIG } from 'extended-typescript-sdk';
 
 // Use testnet
 const client = new PerpetualTradingClient(TESTNET_CONFIG, account);
@@ -279,7 +279,7 @@ import {
   UserClient,
   PerpetualStreamClient,
   // ... and more
-} from 'x10-typescript-trading-starknet';
+} from 'extended-typescript-sdk';
 ```
 
 ## Error Handling
@@ -292,7 +292,7 @@ import {
   RateLimitException,
   NotAuthorizedException,
   SubAccountExists,
-} from 'x10-typescript-trading-starknet';
+} from 'extended-typescript-sdk';
 
 try {
   await client.placeOrder({ ... });
@@ -334,7 +334,7 @@ The performance difference is negligible in real-world applications.
 The SDK ships with pre-built WASM signer - just install and use:
 
 ```bash
-npm install x10-typescript-trading-starknet
+npm install extended-typescript-sdk
 ```
 
 ### For Developers
@@ -394,7 +394,7 @@ MIT
 ## Support
 
 For issues and questions:
-- GitHub: https://github.com/x10xchange/typescript_sdk
+- GitHub: https://github.com/Bvvvp009/Extended-TS-SDK
 - Documentation: https://api.docs.extended.exchange/
 - Extended Exchange: https://extended.exchange/
 
@@ -417,7 +417,7 @@ import {
   getTransferMsgHash,
   getWithdrawalMsgHash,
   generateKeypairFromEthSignature
-} from 'x10-typescript-trading-starknet';
+} from 'extended-typescript-sdk';
 
 // Initialize WASM module (required first!)
 await initWasm();

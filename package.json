@@ -1,5 +1,5 @@
 {
-  "name": "x10-typescript-trading-starknet",
+  "name": "extended-typescript-sdk",
   "version": "0.0.1",
   "description": "Unofficial TypeScript SDK for Extended Exchange - A perpetual DEX built by ex-Revolut team",
   "main": "dist/index.js",
@@ -22,11 +22,11 @@
     "sdk",
     "typescript"
   ],
-  "author": "X10 <tech@ex10.org>",
+  "author": "bvvvp009",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/x10xchange/typescript_sdk"
+    "url": "https://github.com/Bvvvp009/Extended-TS-SDK.git"
   },
   "dependencies": {
     "decimal.js": "^10.4.3",

@@ -3,9 +3,9 @@ name = "stark-crypto-wasm"
 version = "0.3.8"
 edition = "2021"
 description = "WebAssembly bindings for X10 StarkNet cryptographic operations"
-authors = ["X10 <tech@ex10.org>"]
+authors = ["bvvvp009"]
 license = "MIT"
-repository = "https://github.com/x10xchange/typescript_sdk"
+repository = "https://github.com/Bvvvp009/Extended-TS-SDK.git"
 
 [lib]
 crate-type = ["cdylib"]

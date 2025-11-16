@@ -7,7 +7,7 @@ This directory contains example scripts demonstrating how to use the Extended Ty
 Install the SDK from npm:
 
 ```bash
-npm install x10-typescript-trading-starknet
+npm install extended-typescript-sdk
 ```
 
 Or if using the signer package standalone:
@@ -101,7 +101,7 @@ import {
   StarkPerpetualAccount,
   PerpetualTradingClient,
   OrderSide,
-} from 'x10-typescript-trading-starknet';
+} from 'extended-typescript-sdk';
 import Decimal from 'decimal.js';
 
 async function main() {
@@ -140,7 +140,7 @@ main().catch(console.error);
 If you only need cryptographic signing functionality:
 
 ```typescript
-import { initWasm, sign, getOrderMsgHash } from 'x10-typescript-trading-starknet';
+import { initWasm, sign, getOrderMsgHash } from 'extended-typescript-sdk';
 
 async function main() {
   // Initialize WASM module
