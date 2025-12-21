@@ -27,3 +27,6 @@ export class FundingRateModel extends X10BaseModel {
 
 
 
+
+
+

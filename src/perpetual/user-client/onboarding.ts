@@ -327,8 +327,8 @@ export async function getOnboardingPayload(
   // L2 message: pedersen_hash(l1_address, l2_public_key)
   const l1AddressInt = BigInt(wallet.address);
   const l2Message = pedersenHash(l1AddressInt, keyPair.public);
-  const [l2R, l2S] = starkSign(l2Message, keyPair.private);
-
+  const [l2R, l2S] = starkSign(keyPair.private, l2Message); 
+  
   return new OnboardingPayLoad(
     l1Signature,
     keyPair.public,
@@ -363,7 +363,7 @@ export async function getSubAccountCreationPayload(
   // L2 message: pedersen_hash(l1_address, l2_public_key)
   const l1AddressInt = BigInt(l1Address);
   const l2Message = pedersenHash(l1AddressInt, keyPair.public);
-  const [l2R, l2S] = starkSign(l2Message, keyPair.private);
+  const [l2R, l2S] = starkSign(keyPair.private, l2Message);
 
   return new SubAccountOnboardingPayload(
     keyPair.public,

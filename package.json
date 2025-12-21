@@ -1,6 +1,6 @@
 {
   "name": "extended-typescript-sdk",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Unofficial TypeScript SDK for Extended Exchange - A perpetual DEX built by ex-Revolut team",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -26,7 +26,11 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/Bvvvp009/Extended-TS-SDK.git"
+    "url": "git+https://github.com/Bvvvp009/Extended-TS-SDK.git"
+  },
+  "homepage": "https://github.com/Bvvvp009/Extended-TS-SDK#readme",
+  "bugs": {
+    "url": "https://github.com/Bvvvp009/Extended-TS-SDK/issues"
   },
   "dependencies": {
     "decimal.js": "^10.4.3",

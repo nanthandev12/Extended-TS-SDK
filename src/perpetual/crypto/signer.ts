@@ -83,7 +83,12 @@ export async function initWasm(): Promise<void> {
         );
       }
       
-      wasmModule = await import(wasmPath) as WasmModule;
+      // Use absolute path for require() to ensure __dirname resolves correctly in WASM module
+      const absoluteWasmPath = path.resolve(wasmPath);
+      
+      // Use require() for CommonJS modules (WASM module uses __dirname and require('fs'))
+      // Dynamic import() doesn't work correctly with CommonJS modules that use __dirname
+      wasmModule = require(absoluteWasmPath) as WasmModule;
       
       // Initialize the WASM module
       if (wasmModule.init) {

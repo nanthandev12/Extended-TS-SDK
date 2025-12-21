@@ -6,7 +6,8 @@ const { getL2KeysFromL1Account, getOnboardingPayload } = require('../dist/perpet
 async function testWrapperSigning() {
   await initWasm();
 
-  // Known test values
+  // Known test values - TEST VECTOR ONLY, NOT A REAL PRIVATE KEY
+  // This is a deterministic test key used for golden tests against known outputs
   const knownPrivateKey = '0x50c8e358cc974aaaa6e460641e53f78bdc550fd372984aa78ef8fd27c751e6f4';
   const expectedL2PublicKey = '0x78298687996aff29a0bbcb994e1305db082d084f85ec38bb78c41e6787740ec';
   const expectedL2R = '0x70881694c59c7212b1a47fbbc07df4d32678f0326f778861ec3a2a5dbc09157';

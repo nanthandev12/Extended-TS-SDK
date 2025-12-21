@@ -16,7 +16,8 @@ describe('Onboarding', () => {
   it('derives L2 keys and onboarding payload matching test vectors', async () => {
     await initWasm();
 
-    // Known test vectors for onboarding
+    // Known test vectors for onboarding - TEST VECTOR ONLY, NOT A REAL PRIVATE KEY
+    // This is a deterministic test key used for golden tests against known outputs
     const knownPrivateKey = '0x50c8e358cc974aaaa6e460641e53f78bdc550fd372984aa78ef8fd27c751e6f4';
     const expectedL2PublicKey =
       '0x78298687996aff29a0bbcb994e1305db082d084f85ec38bb78c41e6787740ec';

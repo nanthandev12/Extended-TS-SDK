@@ -59,11 +59,13 @@ npx ts-node --project tsconfig.examples.json examples/01_basic_order_env.ts
 ### Basic Examples
 
 - **01_basic_order_env.ts** - Place and cancel a basic order using environment variables
-- **02_market_and_limit_env.ts** - Place limit orders (market and limit examples)
+- **02_market_order_env.ts** - Place market orders using IOC (Immediate or Cancel) time in force
+- **02_market_and_limit_env.ts** - Place limit orders (limit order examples)
 
 ### Order Management
 
-- **04_market_with_tpsl.ts** - Place order with Take Profit / Stop Loss
+- **02_market_order_env.ts** - Place market orders using IOC time in force
+- **04_market_with_tpsl.ts** - Place limit order with Take Profit / Stop Loss (note: uses limit orders, not market)
 - **05_limit_with_tpsl.ts** - Place limit order with TP/SL
 - **06_twap.ts** - Time-Weighted Average Price (TWAP) order execution
 - **07_close_order.ts** - Cancel a specific order by ID
@@ -186,6 +188,7 @@ Required variables:
 - All examples include proper error handling
 - Examples clean up orders/positions when possible
 - Use `postOnly: true` for limit orders to avoid taking liquidity
+- Market orders use `TimeInForce.IOC` (Immediate or Cancel) - orders execute immediately or cancel
 - Always call `await client.close()` to clean up resources
 
 ## Troubleshooting
