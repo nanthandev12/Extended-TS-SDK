@@ -69,6 +69,9 @@ export class PerpetualStreamConnection<T> {
 
   /**
    * Connect to WebSocket
+   * 
+   * The server sends pings every 15 seconds and expects a pong response within 10 seconds.
+   * The ws library automatically responds to ping frames with pong frames.
    */
   async connect(): Promise<this> {
     const extraHeaders: Record<string, string> = {

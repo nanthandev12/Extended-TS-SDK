@@ -5,11 +5,8 @@
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
-    "build": "npm run build:signer && npm run build:ts",
-    "build:ts": "tsc",
-    "build:signer": "node scripts/build-signer.js",
-    "build:signer:custom": "cd wasm-signer && wasm-pack build --target nodejs --out-dir ../wasm && wasm-pack build --target bundler --out-dir ../wasm-web-temp && node -e \"const fs=require('fs');['stark_crypto_wasm.js','stark_crypto_wasm_bg.wasm','stark_crypto_wasm.d.ts'].forEach(f=>{const src=`../wasm-web-temp/${f}`;const dest=`../wasm/${f.replace('.js','-web.js').replace('.wasm','-web.wasm').replace('.d.ts','-web.d.ts')}`;if(fs.existsSync(src))fs.copyFileSync(src,dest);});fs.rmSync('../wasm-web-temp',{recursive:true,force:true});\"",
-    "clean": "rm -rf dist wasm wasm-signer/pkg wasm-signer/pkg-web wasm-signer/target",
+    "build": "tsc",
+    "clean": "rm -rf dist",
     "prepublishOnly": "npm run build",
     "test": "npm run build && jest",
     "lint": "eslint src --ext .ts",
@@ -33,6 +30,7 @@
     "url": "https://github.com/Bvvvp009/Extended-TS-SDK/issues"
   },
   "dependencies": {
+    "@scure/starknet": "^2.0.0",
     "decimal.js": "^10.4.3",
     "dotenv": "^16.3.1",
     "ethers": "^6.9.0",
@@ -53,7 +51,6 @@
   },
   "files": [
     "dist",
-    "wasm",
     "README.md",
     "LICENSE"
   ]

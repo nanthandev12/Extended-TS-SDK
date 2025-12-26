@@ -9,8 +9,6 @@
  * with USDC as collateral and leverage of up to 100x.
  */
 
-// Initialize WASM module
-export { initWasm } from './perpetual/crypto/signer';
 
 // Configuration
 export { EndpointConfig, StarknetDomain, TESTNET_CONFIG, MAINNET_CONFIG } from './perpetual/configuration';
@@ -50,6 +48,8 @@ export { OnBoardedAccount, StarkKeyPair } from './perpetual/user-client/onboardi
 // Stream Client
 export { PerpetualStreamClient } from './perpetual/stream-client/stream-client';
 export { PerpetualStreamConnection } from './perpetual/stream-client/perpetual-stream-connection';
+export { OrderbookSubscription, OrderbookEntry, FullOrderbookSnapshot } from './perpetual/stream-client/orderbook-subscription';
+export { AccountSubscription, AccountOrder, AccountPosition, AccountBalance, FullAccountSnapshot } from './perpetual/stream-client/account-subscription';
 
 // Positions & Trades
 export { PositionModel, PositionHistoryModel, PositionSide, PositionStatus, ExitType } from './perpetual/positions';

@@ -3,7 +3,6 @@
  */
 
 import {
-  initWasm,
   TESTNET_CONFIG,
   MAINNET_CONFIG,
   StarkPerpetualAccount,
@@ -14,9 +13,6 @@ import { getX10EnvConfig } from '../src/utils/env';
 import Decimal from 'decimal.js';
 
 async function main() {
-  console.log('Initializing WASM...');
-  await initWasm();
-  console.log('WASM initialized!');
 
   // Load environment configuration
   const env = getX10EnvConfig(true);
@@ -66,9 +62,9 @@ async function main() {
     console.log('\nPlacing test order...');
     const order = await client.placeOrder({
       marketName: 'BTC-USD',
-      amountOfSynthetic: new Decimal('0.001'),
-      price: new Decimal('60000'),
-      side: OrderSide.BUY,
+      amountOfSynthetic: new Decimal('0.0001'),
+      price: new Decimal('90000'),
+      side: OrderSide.SELL,
       // Optional safety on mainnet: uncomment to avoid taking liquidity
       // postOnly: true,
     });
@@ -78,10 +74,23 @@ async function main() {
       console.log('Order ID:', order.data.id);
       console.log('Order:', JSON.stringify(order.data));
 
-      // Cancel the order
+      // Cancel the order (Note: Large order IDs require externalId for reliability)
       console.log('\nCanceling order...');
-      await client.orders.cancelOrder(typeof order.data.id === 'string' ? parseInt(order.data.id, 10) : order.data.id);
-      console.log('Order canceled!');
+      await new Promise(resolve => setTimeout(resolve, 500)); // Wait for order to propagate
+      
+      // Get all open orders and find ours by ID
+      const openOrders = await client.account.getOpenOrders();
+      const ourOrder = openOrders.data?.find(o => o.id.toString() === order.data!.id.toString());
+      
+      if (ourOrder && ourOrder.externalId) {
+        const cancelResult = await client.orders.cancelOrderByExternalId(ourOrder.externalId);
+        
+        if (cancelResult.error) {
+          console.error('Failed to cancel:', cancelResult.error);
+        } else {
+          console.log('Order canceled successfully!');
+        }
+      }
     }
   } catch (error: any) {
     console.error('Error:', error.message);

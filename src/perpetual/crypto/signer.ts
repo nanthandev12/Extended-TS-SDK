@@ -1,187 +1,52 @@
 /**
- * WASM-based Stark crypto signer
+ * StarkNet crypto signer using @scure/starknet
  * 
- * This module provides fast cryptographic operations using WebAssembly
- * compiled from Rust. The WASM signer is shipped with the SDK and works
- * in both Node.js and browser environments.
+ * This module provides cryptographic operations for StarkNet using the
+ * @scure/starknet library - a pure TypeScript implementation that works
+ * in both Node.js and browser environments without any build steps.
  */
 
-// Dynamic WASM module type - loaded at runtime
-type WasmModule = {
-  init?: () => void;
-  sign?: (private_key: string, msg_hash: string) => string[];
-  pedersen_hash?: (a: string, b: string) => string;
-  generate_keypair_from_eth_signature?: (eth_signature: string) => string[];
-  get_order_msg_hash?: (...args: any[]) => string;
-  get_transfer_msg_hash?: (...args: any[]) => string;
-  get_withdrawal_msg_hash?: (...args: any[]) => string;
-};
+import * as starknet from '@scure/starknet';
 
-let wasmModule: WasmModule | null = null;
-let isInitialized = false;
+// Type selectors for Poseidon hashing (from WASM implementation)
+const STARKNET_DOMAIN_SELECTOR = BigInt('0x1ff2f602e42168014d405a94f75e8a93d640751d71d16311266e140d8b0a210');
+const ORDER_SELECTOR = BigInt('0x36da8d51815527cabfaa9c982f564c80fa7429616739306036f1f9b608dd112');
+const TRANSFER_ARGS_SELECTOR = BigInt('0x1db88e2709fdf2c59e651d141c3296a42b209ce770871b40413ea109846a3b4');
+const WITHDRAWAL_ARGS_SELECTOR = BigInt('0x250a5fa378e8b771654bd43dcb34844534f9d1e29e16b14760d7936ea7f4b1d');
 
-/**
- * Initialize the WASM cryptographic module
- * 
- * **MUST be called before using any signing or hashing functions.**
- * This function loads the WebAssembly module that provides fast cryptographic operations.
- * 
- * @throws Error if WASM module cannot be loaded
- * 
- * @example
- * ```typescript
- * import { initWasm, sign } from 'extended-typescript-sdk';
- * 
- * async function main() {
- *   await initWasm(); // Initialize first!
- *   const [r, s] = sign(privateKey, msgHash);
- * }
- * ```
- */
-export async function initWasm(): Promise<void> {
-  if (isInitialized) {
-    return;
+// Convert Cairo short string to field element (max 31 chars, big-endian ASCII)
+function cairoShortStringToFelt(s: string): bigint {
+  if (s.length > 31) throw new Error('String too long for Cairo short string (max 31 chars)');
+  const bytes = new TextEncoder().encode(s);
+  let result = 0n;
+  for (let i = 0; i < bytes.length; i++) {
+    result = (result << 8n) | BigInt(bytes[i]);
   }
+  return result;
+}
 
-  try {
-    // Load local WASM build from shipped wasm/ folder
-    // Supports both Node.js and browser environments
-    // Detect Node.js: check for process.versions.node (not just process, as bundlers may polyfill it)
-    const isNode = typeof process !== 'undefined' && 
-                   process.versions && 
-                   typeof process.versions.node === 'string' &&
-                   typeof require !== 'undefined';
-    
-    if (isNode) {
-      // Node.js environment - use require/fs
-      const path = require('path');
-      const fs = require('fs');
-      let wasmPath: string | undefined;
-      
-      // Try shipped wasm/ folder first (included in npm package)
-      const possiblePaths = [
-        path.join(__dirname, '../../wasm/stark_crypto_wasm'),
-        path.join(process.cwd(), 'wasm/stark_crypto_wasm'),
-        path.join(process.cwd(), 'node_modules/extended-typescript-sdk/wasm/stark_crypto_wasm'),
-        // Fallback to build directory (for development)
-        path.join(__dirname, '../../wasm-signer/pkg/stark_crypto_wasm'),
-        path.join(process.cwd(), 'wasm-signer/pkg/stark_crypto_wasm'),
-      ];
-      
-      for (const testPath of possiblePaths) {
-        if (fs.existsSync(testPath + '.js') || fs.existsSync(testPath + '.d.ts')) {
-          wasmPath = testPath;
-          break;
-        }
-      }
-      
-      if (!wasmPath) {
-        throw new Error(
-          `WASM module not found. Tried: ${possiblePaths.join(', ')}\n` +
-          `Please run: npm run build:signer\n` +
-          `Or if you want to build your own: npm run build:signer:custom`
-        );
-      }
-      
-      // Use absolute path for require() to ensure __dirname resolves correctly in WASM module
-      const absoluteWasmPath = path.resolve(wasmPath);
-      
-      // Use require() for CommonJS modules (WASM module uses __dirname and require('fs'))
-      // Dynamic import() doesn't work correctly with CommonJS modules that use __dirname
-      wasmModule = require(absoluteWasmPath) as WasmModule;
-      
-      // Initialize the WASM module
-      if (wasmModule.init) {
-        wasmModule.init();
-      }
-    } else {
-      // Browser environment - use dynamic import
-      // Try to load from wasm/ folder (bundler will handle this)
-      try {
-        // For browser, we expect the bundler to handle WASM imports
-        // The bundler should resolve wasm/stark_crypto_wasm-web.js
-        // @ts-expect-error - Dynamic import resolved at runtime by bundler
-        wasmModule = await import('../../wasm/stark_crypto_wasm-web') as WasmModule;
-        
-        if (wasmModule.init) {
-          await wasmModule.init();
-        }
-      } catch (browserError: any) {
-        // Fallback: try without -web suffix (for custom builds)
-        try {
-          // @ts-expect-error - Dynamic import resolved at runtime by bundler
-          wasmModule = await import('../../wasm/stark_crypto_wasm') as WasmModule;
-          if (wasmModule.init) {
-            await wasmModule.init();
-          }
-        } catch (fallbackError: any) {
-          throw new Error(
-            `Failed to load WASM module in browser environment.\n` +
-            `Make sure to build with browser target: npm run build:signer\n` +
-            `Error: ${browserError.message || browserError}`
-          );
-        }
-      }
-    }
-    
-    isInitialized = true;
-  } catch (error: any) {
-    throw new Error(
-      `Failed to initialize WASM module.\n` +
-      `The SDK should ship with pre-built WASM files. If you're developing, run: npm run build:signer\n` +
-      `Error: ${error?.message || error}`
-    );
-  }
+// Hash StarkNet domain using Poseidon
+function hashStarknetDomain(name: string, version: string, chainId: string, revision: number): bigint {
+  return starknet.poseidonHashMany([
+    STARKNET_DOMAIN_SELECTOR,
+    cairoShortStringToFelt(name),
+    cairoShortStringToFelt(version),
+    cairoShortStringToFelt(chainId),
+    BigInt(revision)
+  ]);
 }
 
 /**
- * Check if WASM module is initialized
- */
-function ensureInitialized(): void {
-  if (!isInitialized || !wasmModule) {
-    throw new Error(
-      'WASM module not initialized. Call initWasm() first.'
-    );
-  }
-}
-
-/**
- * Sign a message hash using ECDSA
- * 
- * This function signs a message hash using the StarkNet private key.
- * Returns the signature as a tuple [r, s] where both are BigInt values.
- * Compatible with Extended Exchange API.
- * 
+ * Sign a message hash using StarkNet ECDSA
  * @param privateKey - StarkNet private key as BigInt
- * @param msgHash - Message hash to sign as BigInt
- * @returns Tuple [r, s] representing the ECDSA signature
- * 
- * @example
- * ```typescript
- * await initWasm();
- * const privateKey = BigInt('0x...');
- * const msgHash = BigInt('0x...');
- * const [r, s] = sign(privateKey, msgHash);
- * ```
+ * @param msgHash - Message hash as BigInt
+ * @returns Signature tuple [r, s]
  */
 export function sign(privateKey: bigint, msgHash: bigint): [bigint, bigint] {
-  ensureInitialized();
-  
-  const privHex = '0x' + privateKey.toString(16);
-  const hashHex = '0x' + msgHash.toString(16);
-  
-  // Use local WASM for signing
-  if (!wasmModule!.sign) {
-    throw new Error('WASM sign function not available. Make sure the WASM module is properly built.');
-  }
-
-  const result = wasmModule!.sign(privHex, hashHex);
-  
-  // Convert string results to bigint
-  const r = BigInt(result[0]);
-  const s = BigInt(result[1]);
-  
-  return [r, s];
+  const privKeyHex = '0x' + privateKey.toString(16).padStart(64, '0');
+  const msgHashHex = '0x' + msgHash.toString(16).padStart(64, '0');
+  const signature = starknet.sign(msgHashHex, privKeyHex);
+  return [signature.r, signature.s];
 }
 
 /**
@@ -196,82 +61,32 @@ export function sign(privateKey: bigint, msgHash: bigint): [bigint, bigint] {
  * 
  * @example
  * ```typescript
- * await initWasm();
  * const hash = pedersenHash(BigInt('0x123'), BigInt('0x456'));
  * ```
  */
 export function pedersenHash(a: bigint, b: bigint): bigint {
-  ensureInitialized();
-  
-  if (!wasmModule!.pedersen_hash) {
-    throw new Error('WASM pedersen_hash function not available.');
-  }
-
-  // Convert bigint to hex string (with 0x prefix)
-  // Field elements are 251 bits, so we use the natural hex representation
-  const aHex = '0x' + a.toString(16);
-  const bHex = '0x' + b.toString(16);
-  const result = wasmModule!.pedersen_hash(aHex, bHex);
-  
-  // Remove '0x' prefix if present
-  const cleanResult = result.startsWith('0x') ? result.slice(2) : result;
-  
-  return BigInt('0x' + cleanResult);
+  // @scure/starknet.pedersen returns hex string
+  const resultHex = starknet.pedersen(a, b);
+  return BigInt(resultHex);
 }
 
 /**
- * Generate StarkNet keypair from Ethereum signature
- * 
- * Derives a StarkNet keypair from an Ethereum signature using key grinding.
- * Used during account onboarding to create L2 keys from L1 Ethereum account.
- * Compatible with Extended Exchange API.
- * 
- * @param ethSignature - Ethereum signature as hex string (65 bytes: r(32) + s(32) + v(1))
- * @returns Tuple [privateKey, publicKey] as BigInt values
- * 
- * @example
- * ```typescript
- * await initWasm();
- * const ethSig = '0x...'; // 65-byte hex string
+ * Generate StarkNet keypair from Ethereum signature (for onboarding)
+ * @param ethSignature - Ethereum signature as hex string (65 bytes)
+ * @returns Tuple [privateKey, publicKey] as BigInt
  * const [privateKey, publicKey] = generateKeypairFromEthSignature(ethSig);
  * ```
  */
 export function generateKeypairFromEthSignature(ethSignature: string): [bigint, bigint] {
-  ensureInitialized();
-  
-  if (!wasmModule!.generate_keypair_from_eth_signature) {
-    throw new Error('WASM generate_keypair_from_eth_signature function not available.');
-  }
-
-  const result = wasmModule!.generate_keypair_from_eth_signature(ethSignature);
-  
-  // Convert string results to bigint
-  const privateKey = BigInt(result[0]);
-  const publicKey = BigInt(result[1]);
-  
-  return [privateKey, publicKey];
+  const privateKeyHex = starknet.ethSigToPrivate(ethSignature);
+  const publicKeyHex = starknet.getStarkKey(privateKeyHex);
+  return [BigInt(privateKeyHex), BigInt(publicKeyHex)];
 }
 
 /**
- * Generate message hash for an order
- * 
- * Creates a structured hash for order signing compatible with Extended Exchange API.
- * This hash is used to sign orders before submitting them to the exchange.
- * 
- * @param params - Order parameters including position, assets, amounts, expiration, etc.
- * @returns Message hash as BigInt that can be signed with sign()
- * 
- * @example
- * ```typescript
- * await initWasm();
- * const orderHash = getOrderMsgHash({
- *   positionId: 12345,
- *   baseAssetId: '0x...',
- *   baseAmount: '1000000',
- *   // ... other parameters
- * });
- * const [r, s] = sign(privateKey, orderHash);
- * ```
+ * Generate order message hash for signing
+ * @param params - Order parameters
+ * @returns Message hash as BigInt
  */
 export function getOrderMsgHash(params: {
   positionId: number;
@@ -289,42 +104,38 @@ export function getOrderMsgHash(params: {
   domainChainId: string;
   domainRevision: string;
 }): bigint {
-  ensureInitialized();
-  
-  if (!wasmModule!.get_order_msg_hash) {
-    throw new Error('WASM get_order_msg_hash function not available.');
-  }
-
-  const result = wasmModule!.get_order_msg_hash(
+  const orderHash = starknet.poseidonHashMany([
+    ORDER_SELECTOR,
     BigInt(params.positionId),
-    params.baseAssetId,
-    params.baseAmount,
-    params.quoteAssetId,
-    params.quoteAmount,
-    params.feeAmount,
-    params.feeAssetId,
+    BigInt(params.baseAssetId),
+    BigInt(params.baseAmount),
+    BigInt(params.quoteAssetId),
+    BigInt(params.quoteAmount),
+    BigInt(params.feeAssetId),
+    BigInt(params.feeAmount),
     BigInt(params.expiration),
-    BigInt(params.salt),
-    params.userPublicKey,
+    BigInt(params.salt)
+  ]);
+  
+  const domainHash = hashStarknetDomain(
     params.domainName,
     params.domainVersion,
     params.domainChainId,
-    params.domainRevision
+    parseInt(params.domainRevision)
   );
   
-  // Remove '0x' prefix if present
-  const cleanResult = result.startsWith('0x') ? result.slice(2) : result;
-  
-  return BigInt('0x' + cleanResult);
+  return starknet.poseidonHashMany([
+    cairoShortStringToFelt('StarkNet Message'),
+    domainHash,
+    BigInt(params.userPublicKey),
+    orderHash
+  ]);
 }
 
 /**
- * Generate message hash for a transfer
- * 
- * Creates a structured hash for transfer signing compatible with Extended Exchange API.
- * 
- * @param params - Transfer parameters including sender/recipient positions, amount, etc.
- * @returns Message hash as BigInt that can be signed with sign()
+ * Generate transfer message hash for signing
+ * @param params - Transfer parameters
+ * @returns Message hash as BigInt
  */
 export function getTransferMsgHash(params: {
   recipientPositionId: number;
@@ -339,42 +150,35 @@ export function getTransferMsgHash(params: {
   domainRevision: string;
   collateralId: string;
 }): bigint {
-  ensureInitialized();
-  
-  if (!wasmModule!.get_transfer_msg_hash) {
-    throw new Error('WASM get_transfer_msg_hash function not available.');
-  }
-
-  const result = wasmModule!.get_transfer_msg_hash(
+  const transferHash = starknet.poseidonHashMany([
+    TRANSFER_ARGS_SELECTOR,
     BigInt(params.recipientPositionId),
     BigInt(params.senderPositionId),
-    params.amount,
+    BigInt(params.collateralId),
+    BigInt(params.amount),
     BigInt(params.expiration),
-    params.salt,
-    params.userPublicKey,
+    BigInt(params.salt)
+  ]);
+  
+  const domainHash = hashStarknetDomain(
     params.domainName,
     params.domainVersion,
     params.domainChainId,
-    params.domainRevision,
-    params.collateralId
+    parseInt(params.domainRevision)
   );
   
-  // Remove '0x' prefix if present
-  const cleanResult = result.startsWith('0x') ? result.slice(2) : result;
-  
-  return BigInt('0x' + cleanResult);
+  return starknet.poseidonHashMany([
+    cairoShortStringToFelt('StarkNet Message'),
+    domainHash,
+    BigInt(params.userPublicKey),
+    transferHash
+  ]);
 }
 
 /**
- * Get withdrawal message hash
- */
-/**
- * Generate message hash for a withdrawal
- * 
- * Creates a structured hash for withdrawal signing compatible with Extended Exchange API.
- * 
- * @param params - Withdrawal parameters including recipient, position, amount, etc.
- * @returns Message hash as BigInt that can be signed with sign()
+ * Generate withdrawal message hash for signing
+ * @param params - Withdrawal parameters
+ * @returns Message hash as BigInt
  */
 export function getWithdrawalMsgHash(params: {
   recipientHex: string;
@@ -389,29 +193,28 @@ export function getWithdrawalMsgHash(params: {
   domainRevision: string;
   collateralId: string;
 }): bigint {
-  ensureInitialized();
-  
-  if (!wasmModule!.get_withdrawal_msg_hash) {
-    throw new Error('WASM get_withdrawal_msg_hash function not available.');
-  }
-
-  const result = wasmModule!.get_withdrawal_msg_hash(
-    params.recipientHex,
+  const withdrawalHash = starknet.poseidonHashMany([
+    WITHDRAWAL_ARGS_SELECTOR,
+    BigInt(params.recipientHex),
     BigInt(params.positionId),
-    params.amount,
+    BigInt(params.collateralId),
+    BigInt(params.amount),
     BigInt(params.expiration),
-    params.salt,
-    params.userPublicKey,
+    BigInt(params.salt)
+  ]);
+  
+  const domainHash = hashStarknetDomain(
     params.domainName,
     params.domainVersion,
     params.domainChainId,
-    params.domainRevision,
-    params.collateralId
+    parseInt(params.domainRevision)
   );
   
-  // Remove '0x' prefix if present
-  const cleanResult = result.startsWith('0x') ? result.slice(2) : result;
-  
-  return BigInt('0x' + cleanResult);
+  return starknet.poseidonHashMany([
+    cairoShortStringToFelt('StarkNet Message'),
+    domainHash,
+    BigInt(params.userPublicKey),
+    withdrawalHash
+  ]);
 }
 

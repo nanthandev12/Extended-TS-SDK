@@ -3,7 +3,6 @@
  */
 
 import {
-  initWasm,
   TESTNET_CONFIG,
   MAINNET_CONFIG,
   PerpetualStreamClient,
@@ -11,9 +10,6 @@ import {
 import { getX10EnvConfig } from '../src/utils/env';
 
 async function main() {
-  console.log('Initializing WASM...');
-  await initWasm();
-
   const env = getX10EnvConfig(false);
   const config = env.environment === 'mainnet' ? MAINNET_CONFIG : TESTNET_CONFIG;
 
@@ -22,10 +18,7 @@ async function main() {
   });
 
   console.log('Subscribing to BTC-USD orderbook depth=10...');
-  const orderbookStream = streamClient.subscribeToOrderbooks({
-    marketName: 'BTC-USD',
-    depth: 10,
-  });
+  const orderbookStream = streamClient.subscribeToAccountUpdates("e7a9aad2aefa6e747cb68a7c0259ef66");
 
   await orderbookStream.connect();
   console.log('Connected. Listening for updates...');
