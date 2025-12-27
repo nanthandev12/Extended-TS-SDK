@@ -76,6 +76,10 @@ export { X10BaseModel, SettlementSignatureModel } from './utils/model';
 export { generateNonce } from './utils/nonce';
 export { utcNow, toEpochMillis } from './utils/date';
 
+// Market utilities
+export { ExtendedMarketConfig } from './utils/marketConfig';
+export { formatPrice, formatSize } from './utils/formatters';
+
 // Utils
 export * from './utils/env';
 

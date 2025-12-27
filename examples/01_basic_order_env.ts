@@ -8,6 +8,7 @@ import {
   StarkPerpetualAccount,
   PerpetualTradingClient,
   OrderSide,
+  TimeInForce,
 } from '../src/index';
 import { getX10EnvConfig } from '../src/utils/env';
 import Decimal from 'decimal.js';
@@ -60,13 +61,29 @@ async function main() {
 
     // Place a test order (small amount)
     console.log('\nPlacing test order...');
+    
+    // Generate client order ID (same as bot)
+    const generateClientOrderId = () => {
+      const bytes: number[] = [];
+      for (let i = 0; i < 16; i++) {
+        bytes.push(Math.floor(Math.random() * 256));
+      }
+      const hex = bytes.map(b => b.toString(16).padStart(2, '0')).join('');
+      return `0x${hex}`;
+    };
+    
+    const cloid = generateClientOrderId();
+    console.log('Client Order ID:', cloid);
+    
     const order = await client.placeOrder({
-      marketName: 'BTC-USD',
-      amountOfSynthetic: new Decimal('0.0001'),
-      price: new Decimal('90000'),
-      side: OrderSide.SELL,
-      // Optional safety on mainnet: uncomment to avoid taking liquidity
-      // postOnly: true,
+      marketName: 'HYPE-USD',
+      amountOfSynthetic: new Decimal('1.72'),  // Same as bot hedge size
+      price: new Decimal('25.981'),             // Rounded to valid precision
+      side: OrderSide.BUY,                      // Bot uses BUY for LONG hedge
+      postOnly: false,                          // Bot passes this
+      externalId: cloid,                        // Bot passes this
+      reduceOnly: false,                        // Bot passes this
+      timeInForce: TimeInForce.GTT,             // Bot maps to GTT by default
     });
 
     if (order.data) {
