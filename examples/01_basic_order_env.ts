@@ -76,9 +76,9 @@ async function main() {
     console.log('Client Order ID:', cloid);
     
     const order = await client.placeOrder({
-      marketName: 'HYPE-USD',
-      amountOfSynthetic: new Decimal('1.72'),  // Same as bot hedge size
-      price: new Decimal('25.981'),             // Rounded to valid precision
+      marketName: 'ETH-USD',
+      amountOfSynthetic: new Decimal('0.0005'),  // Same as bot hedge size
+      price: new Decimal('2598.1'),             // Rounded to valid precision
       side: OrderSide.BUY,                      // Bot uses BUY for LONG hedge
       postOnly: false,                          // Bot passes this
       externalId: cloid,                        // Bot passes this

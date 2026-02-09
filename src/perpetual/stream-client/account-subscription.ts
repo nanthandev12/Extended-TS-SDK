@@ -84,6 +84,7 @@ export class AccountSubscription {
   private lastSequence: number = 0;
   private lastTimestamp: number = 0;
 
+
   // Order statuses to keep in the list
   private readonly ACTIVE_ORDER_STATUSES = new Set([
     OrderStatus.NEW,
@@ -191,16 +192,17 @@ export class AccountSubscription {
             this.handleOrderSnapshot(orders);
           } else {
             this.handleOrderUpdate(orders);
+            yield this.buildSnapshot();
           }
-          yield this.buildSnapshot();
         } else if (event.type === 'POSITION') {
           const positions = event.data.positions || [];
           if (isSnapshot) {
             this.handlePositionSnapshot(positions);
+            yield this.buildSnapshot();
           } else {
             this.handlePositionUpdate(positions);
+            yield this.buildSnapshot();
           }
-          yield this.buildSnapshot();
         } else if (event.type === 'BALANCE') {
           const balance = event.data.balance;
           if (balance) {
@@ -208,8 +210,8 @@ export class AccountSubscription {
               this.handleBalanceSnapshot(balance);
             } else {
               this.handleBalanceUpdate(balance);
+              yield this.buildSnapshot();
             }
-            yield this.buildSnapshot();
           }
         }
       } catch (error) {

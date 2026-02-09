@@ -31,6 +31,8 @@ export class OrderbookSubscription {
   private marketName: string;
   private lastSequence: number = 0;
   private lastTimestamp: number = 0;
+  private snapshotReceived: boolean = false;
+  private bufferedDeltas: OrderbookUpdateModel[] = [];
 
   constructor(connection: PerpetualStreamConnection<any>, marketName: string) {
     this.connection = connection;
@@ -70,19 +72,23 @@ export class OrderbookSubscription {
   }
 
   private updateOrderbook(data: OrderbookUpdateModel): void {
+    // Deltas are RELATIVE changes (add/subtract from existing levels)
     for (const bid of data.bid) {
       const priceKey = bid.price.toString();
       const existing = this.bidLevels.get(priceKey);
 
       if (existing) {
+        // Add delta to existing level
         const newQty = existing.qty.plus(bid.qty);
-        if (newQty.isZero()) {
+        if (newQty.isZero() || newQty.isNegative()) {
+          // Remove level when it reaches zero or goes negative
           this.bidLevels.delete(priceKey);
         } else {
           existing.qty = newQty;
         }
       } else {
-        if (!bid.qty.isZero()) {
+        // New level - only add if qty is positive
+        if (!bid.qty.isZero() && !bid.qty.isNegative()) {
           this.bidLevels.set(priceKey, {
             price: bid.price,
             qty: bid.qty,
@@ -96,14 +102,17 @@ export class OrderbookSubscription {
       const existing = this.askLevels.get(priceKey);
 
       if (existing) {
+        // Add delta to existing level
         const newQty = existing.qty.plus(ask.qty);
-        if (newQty.isZero()) {
+        if (newQty.isZero() || newQty.isNegative()) {
+          // Remove level when it reaches zero or goes negative
           this.askLevels.delete(priceKey);
         } else {
           existing.qty = newQty;
         }
       } else {
-        if (!ask.qty.isZero()) {
+        // New level - only add if qty is positive
+        if (!ask.qty.isZero() && !ask.qty.isNegative()) {
           this.askLevels.set(priceKey, {
             price: ask.price,
             qty: ask.qty,
@@ -144,14 +153,29 @@ export class OrderbookSubscription {
         if (event.type === 'SNAPSHOT' && event.data) {
           const orderbookData = this.parseOrderbookData(event.data);
           if (orderbookData) {
+            // Snapshot can come at any time - reset state
             this.initOrderbook(orderbookData);
+            this.snapshotReceived = true;
+            
+            // Apply any buffered deltas that came before snapshot
+            for (const bufferedDelta of this.bufferedDeltas) {
+              this.updateOrderbook(bufferedDelta);
+            }
+            this.bufferedDeltas = [];
+            
             yield this.buildSnapshot();
           }
         } else if (event.type === 'DELTA' && event.data) {
           const orderbookData = this.parseOrderbookData(event.data);
           if (orderbookData) {
-            this.updateOrderbook(orderbookData);
-            yield this.buildSnapshot();
+            if (this.snapshotReceived) {
+              // Apply delta immediately after snapshot
+              this.updateOrderbook(orderbookData);
+              yield this.buildSnapshot();
+            } else {
+              // Buffer deltas until snapshot arrives
+              this.bufferedDeltas.push(orderbookData);
+            }
           }
         }
       } catch (error) {
